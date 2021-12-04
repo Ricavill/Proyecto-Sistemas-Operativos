@@ -1,19 +1,12 @@
-#include <stdio.h>
-#include <time.h>
-#include <sys/time.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <sys/resource.h>
-#include <stdbool.h>
 #include <getopt.h>
-#include "common.h"
-#include <pthread.h>
 #include <limits.h>
+
+#include "common.h"
+
 void print_help(char *command)
 {
 	printf("Cliente ejemplo aplicación eco.\n");
-	printf("uso:\n %s <hostname> <puerto>\n", command);
+	printf("uso:\n %s <hostname> <puerto> <topico><valor>\n", command);
 	printf(" %s -h\n", command);
 	printf("Opciones:\n");
 	printf(" -h\t\t\tAyuda, muestra este mensaje\n");
@@ -26,7 +19,7 @@ int main(int argc, char **argv)
 	//Socket
 	int clientfd;
 	//Direcciones y puertos
-	char *hostname, *port;
+	char *hostname, *port,*topico,*valor;
 
 	//Lectura desde consola
 	char *linea_consola;
@@ -34,26 +27,40 @@ int main(int argc, char **argv)
 	size_t max = MAXLINE;
 	ssize_t n, l = 0;
 
-	while ((opt = getopt (argc, argv, "h")) != -1){
+	while ((opt = getopt (argc, argv, "htv")) != -1){
 		switch(opt)
 		{
 			case 'h':
 				print_help(argv[0]);
 				return 0;
 			default:
-				fprintf(stderr, "uso: %s <hostname> <puerto>\n", argv[0]);
+				fprintf(stderr, "uso: %s <hostname> <puerto> <topico> <valor>\n", argv[0]);
 				fprintf(stderr, "     %s -h\n", argv[0]);
 				return 1;
 		}
 	}
 
-	if(argc != 3){
-		fprintf(stderr, "uso: %s <hostname> <puerto>\n", argv[0]);
+	if(argc != 5){
+		fprintf(stderr, "uso: %s <hostname> <puerto> <topico> <valor>\n", argv[0]);
 		fprintf(stderr, "     %s -h\n", argv[0]);
 		return 1;
 	}else{
 		hostname = argv[1];
 		port = argv[2];
+		
+		topico = argv[3];
+		valor = argv[4];
+		//printf("%s\n",topico);
+		//printf("%s\n",valor);
+		if(topico==NULL){
+			printf("No se ingreso topico");
+			return 0;
+		}
+		
+		if(valor==NULL){
+			printf("No se ingreso valor");
+			return 0;
+		}
 	}
 
 	//Valida el puerto
@@ -72,13 +79,24 @@ int main(int argc, char **argv)
 	printf("Conectado exitosamente a %s en el puerto %s.\n", hostname, port);
 
 	linea_consola = (char *) calloc(1, MAXLINE);
-	printf("Ingrese texto para enviar al servidor, escriba CHAO para terminar...\n");
+	int st=strlen(topico)+strlen(valor);
+	char r[st+2];
+	snprintf(r,st+2,"%s %s",topico,valor);
+	
 	printf("> ");
-	l = getline(&linea_consola, &max, stdin); //lee desde consola
+	l = getline(&linea_consola, &max, stdin);
+	int iproc=contar_procesos(linea_consola," ");
+	printf("%d\n",iproc);
+	if(iproc!=2 ){
+		printf("No ingreso bien el topico junto con el mensaje\n");
+		return 0;
+	} //lee desde consola
 	while(l > 0){
-		n = write(clientfd, linea_consola, l); //Envia al servidor
-		if(n<=0)
-			break;
+		n = write(clientfd, linea_consola, l);  //Envia al servidor
+		if(n<=0){
+			printf("Error");
+		}
+			
 
 		n = read(clientfd, read_buffer, MAXLINE); //Lee respuesta del servidor
 		if(n<=0)
@@ -89,7 +107,8 @@ int main(int argc, char **argv)
 
 		//Volver a leer desde consola
 		printf("> ");
-		l = getline(&linea_consola, &max, stdin);
+		l=-1;
+		//l = getline(&linea_consola, &max, stdin);
 	}
 
 

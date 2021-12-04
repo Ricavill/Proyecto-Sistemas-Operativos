@@ -1,5 +1,110 @@
-#include "common.h"
 
+#include "common.h"
+#include <semaphore.h>
+
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+void separar_tokens(char* linea, char *delim, char* comando, char** argumentos){
+	char *token;
+	int i=0;
+	token=strtok(linea,delim);
+	sprintf(comando,"%s",token);
+	while(token!=NULL){
+		sprintf(argumentos[i],"%s",token);
+		token=strtok(NULL,delim);
+		i++;
+	}	
+	*(argumentos+i)=NULL;
+
+
+
+
+}
+int contar_tokens(char *linea,char *delim){
+	char *tokens;
+	char *copialinea=malloc(100);
+	strcpy(copialinea,linea);
+	int i=0;
+	tokens=strtok(linea,delim);
+	i++;
+	while(tokens!=NULL){
+		tokens=strtok(NULL,delim);
+		i++;
+
+}
+	sprintf(linea,"%s",copialinea);
+	free(copialinea);
+	return i;
+	}
+
+void separar_procesos(char* linea, char *delim, char** comandos){
+	char *token;
+	int i=0;
+	token=strtok(linea,delim);
+	
+	while(token!=NULL){
+		sprintf(comandos[i],"%s",token);
+		token=strtok(NULL,delim);
+		i++;
+	}	
+	*(comandos+i)=NULL;
+
+
+
+
+}
+int contar_procesos(char *linea,char *delim){
+	char *tokens;
+	char *copialinea=malloc(100);
+	strcpy(copialinea,linea);
+	int i=0;
+	tokens=strtok(linea,delim);
+
+	while(tokens!=NULL){
+		tokens=strtok(NULL,delim);
+		i++;
+
+}
+	sprintf(linea,"%s",copialinea);
+	free(copialinea);
+	return i;
+	}
+void sbuf_init(sbuf_t *sp,int n){
+	sp-> buf=calloc(n,sizeof(int));
+	sp->n=n;
+	sp->front=sp->rear=0;
+	sem_init(&sp->mutex,0,1);
+	sem_init(&sp->slots,0,n);
+	sem_init(&sp->items,0,0);
+
+
+}
+
+void sbuf_deinit(sbuf_t *sp){
+
+	free(sp->buf);
+}
+
+void sbuf_insert(sbuf_t *sp,int items){
+	sem_wait(&sp->slots);
+	sem_wait(&sp->mutex);
+	sp->buf[(++sp->rear)%(sp->n)] =items;
+	sem_post(&sp->mutex);
+	sem_post(&sp->items);
+
+}
+int sbuf_remove(sbuf_t *sp){
+	int item;
+	sem_wait(&sp->items);
+        sem_wait(&sp->mutex);
+	item=sp->buf[(++sp->front)%(sp->n)];
+	sem_post(&sp->mutex);
+        sem_post(&sp->slots);
+	
+	return item;
+
+}
 int open_listenfd(char *port) 
 {
     struct addrinfo hints, *listp, *p;

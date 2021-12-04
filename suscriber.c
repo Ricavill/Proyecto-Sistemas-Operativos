@@ -73,7 +73,7 @@ int main(int argc, char **argv)
 		if(n<=0)
 			break;
 
-		n = read(clientfd, read_buffer, MAXLINE); //Lee respuesta del servidor
+		//n = read(clientfd, read_buffer, MAXLINE); //Lee respuesta del servidor
 		if(n<=0)
 			break;
 
@@ -82,7 +82,8 @@ int main(int argc, char **argv)
 
 		//Volver a leer desde consola
 		printf("> ");
-		l = getline(&linea_consola, &max, stdin);
+		l=-1;
+		//l = getline(&linea_consola, &max, stdin);
 	}
 
 

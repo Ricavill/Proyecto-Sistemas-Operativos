@@ -8,14 +8,20 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+#define SBUFSIZE 100
 void atender_cliente(int connfd);
 
+void *thread(void *vargp);
+sbuf_t sbuf;
 struct timeval current_time;
 void print_help(char *command)
 {
 	printf("Servidor ejemplo apliación eco.\n");
 	printf("uso:\n %s <puerto>\n", command);
 	printf(" %s -h\n", command);
+	fprintf(stderr, "%s -l para leer log del dia de hoy\n", command);
 	printf("Opciones:\n");
 	printf(" -h\t\t\tAyuda, muestra este mensaje\n");
 }
@@ -115,7 +121,8 @@ int sizec=0;
 } 
 int main(int argc, char **argv)
 {
-
+	int log=0;
+	
 	time_t t=time(NULL);
 	struct tm tm=*localtime(&t);
 	int dia[3]={tm.tm_year+1900,tm.tm_mon+1,tm.tm_mday};
@@ -139,25 +146,87 @@ int main(int argc, char **argv)
 	struct hostent *hp;
 	char *haddrp, *port;
 
-	while ((opt = getopt (argc, argv, "h")) != -1){
+	while ((opt = getopt (argc, argv, "hl")) != -1){
 		switch(opt)
 		{
 			case 'h':
 				print_help(argv[0]);
 				return 0;
+			case 'l':
+				log=1;
+				break;
 			default:
 				fprintf(stderr, "uso: %s <puerto>\n", argv[0]);
+				fprintf(stderr, "     %s -l para leer log del dia de hoy\n", argv[0]);
 				fprintf(stderr, "     %s -h\n", argv[0]);
 				return 1;
 		}
 	}
+	crearDocumento();
+	if(log){
+		leerDocumento( );
+	}
 
-	if(argc != 2){
-		fprintf(stderr, "uso: %s <puerto>\n", argv[0]);
-		fprintf(stderr, "     %s -h\n", argv[0]);
-		return 1;
-	}else
-		port = argv[1];
+	
+	
+	
+	
+	//Registra funcion para recoger hijos zombies
+	signal(SIGCHLD, recoger_hijos);
+	int fd[2];
+	pipe(fd);
+	int pidoriginal=fork();
+
+	
+	//proceso donde se escucharan a los publishers
+	if(pidoriginal==0){
+	
+		signal(SIGCHLD, recoger_hijos);
+		 port="8081";
+
+		//Valida el puerto
+		int port_n = atoi(port);
+		if(port_n <= 0 || port_n > USHRT_MAX){
+			fprintf(stderr, "Puerto: %s invalido. Ingrese un número entre 1 y %d.\n", port, USHRT_MAX);
+			return 1;
+		}
+		printf("fff");
+		
+		listenfd = open_listenfd(port);
+
+		if(listenfd < 0)
+			connection_error(listenfd);
+		printf("server escuchando en puerto %s...\n", port);
+		
+		
+		pthread_t tid;
+		sbuf_init(&sbuf,11);
+
+		for(int i=0; i<10;i++){
+			pthread_create(&tid,NULL,thread,NULL);	
+		}
+		int connfd;
+		clientlen = sizeof(clientaddr);
+		while (1) {
+			
+			connfd = accept(listenfd, (struct sockaddr *)&clientaddr, &clientlen);
+					sbuf_insert(&sbuf,connfd);	
+
+
+		//	pthread_create(&tid,NULL,thread,connfd_ptr);
+		}
+		close(connfd);
+		exit(0);
+	
+	
+		
+	
+	
+	
+		
+	}
+	//Parte de suscriber
+	 port="8080";
 
 	//Valida el puerto
 	int port_n = atoi(port);
@@ -165,15 +234,9 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Puerto: %s invalido. Ingrese un número entre 1 y %d.\n", port, USHRT_MAX);
 		return 1;
 	}
-	crearDocumento();
-	leerDocumento( );
 	
 	
-	//Registra funcion para recoger hijos zombies
-	signal(SIGCHLD, recoger_hijos);
 	
-	
-
 	//Abre un socket de escucha en port
 	listenfd = open_listenfd(port);
 
@@ -208,6 +271,23 @@ int main(int argc, char **argv)
 		close(connfd);
 	}
 }
+void *thread(void *vargp){
+	
+
+	//Entra a estado detach antes de atender al cliente
+	pthread_detach(pthread_self());
+
+	//Atiende al cliente
+	while(1){
+	int connfd=sbuf_remove(&sbuf);
+		atender_cliente(connfd);
+		
+		close(connfd);
+	}
+	
+		
+	
+}
 
 void atender_cliente(int connfd)
 {
@@ -228,11 +308,13 @@ void atender_cliente(int connfd)
 		}
 
 		//Reenvía el mensaje al cliente
-		n = write(connfd, buf, n);
+		n = 0;
 		if(n <= 0)
 			return;
 
-		memset(buf, 0, MAXLINE); //Encera el buffer
+		memset(buf, 0, MAXLINE); 
+		return;//Encera el buffer
 	}
 }
+
 

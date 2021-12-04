@@ -7,10 +7,10 @@ publisher: publisher.o common.o $(DEPS)
 	gcc -o $@  publisher.o common.o -lpthread $(DFLAGS)
 	
 suscriber: suscriber.o common.o $(DEPS)
-	gcc -o $@  suscriber.o common.o   $(DFLAGS)
+	gcc -o $@  suscriber.o common.o   $(DFLAGS) -lpthread
 
 %.o: %.c $(DEPS)
-	gcc $(CFLAGS) -o $@ $< -I. $(DFLAGS)
+	gcc $(CFLAGS) -o $@ $< -I. $(DFLAGS) -lpthread
 
 
 
