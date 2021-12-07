@@ -1,27 +1,32 @@
 Suscriber connectado, connfd:6
+Publisher connectado, connfd:7
+Topico topico1 ingresado con mensaje: hola
+Publisher desconectado, connfd:7
+Mensaje enviado a Suscriber:hola
+Suscriber desconectado, connfd:6
+Publisher connectado, connfd:6
+Topico topico1 ingresado con mensaje: como
+Publisher desconectado, connfd:6
+Mensaje enviado a Suscriber:como
+Suscriber desconectado, connfd:6
+Publisher connectado, connfd:7
+Topico topico1 ingresado con mensaje: estas
+Publisher desconectado, connfd:7
+Mensaje enviado a Suscriber:estas
+Suscriber desconectado, connfd:6
+Suscriber connectado, connfd:7
+Publisher connectado, connfd:6
+Topico gato ingresado con mensaje: perro
+Publisher desconectado, connfd:6
+Mensaje enviado a Suscriber:perro
+Suscriber desconectado, connfd:7
 Publisher connectado, connfd:6
 Topico hola ingresado con mensaje: como
 Publisher desconectado, connfd:6
-Mensaje enviado a Suscriber:como
-Suscriber desconectado, connfd:6
-Publisher connectado, connfd:7
-Topico hola ingresado con mensaje: que
-Publisher desconectado, connfd:7
-Mensaje enviado a Suscriber:que
-Suscriber desconectado, connfd:6
-Publisher connectado, connfd:6
-Topico hola ingresado con mensaje: hehe
-Publisher desconectado, connfd:6
-Mensaje enviado a Suscriber:hehe
-Suscriber desconectado, connfd:6
+Suscriber connectado, connfd:6
 Suscriber connectado, connfd:7
-Publisher connectado, connfd:7
-Topico jeje ingresado con mensaje: como
-Publisher desconectado, connfd:7
 Mensaje enviado a Suscriber:como
 Suscriber desconectado, connfd:7
-Publisher connectado, connfd:6
-Topico hola ingresado con mensaje: p
-Publisher desconectado, connfd:6
-Mensaje enviado a Suscriber:p
-Suscriber desconectado, connfd:6
+Suscriber connectado, connfd:8
+Mensaje enviado a Suscriber:como
+Suscriber desconectado, connfd:8

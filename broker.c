@@ -649,6 +649,10 @@ void atender_cliente2(int connfd,int *j)
 						}
 						fprintf(flog,"Mensaje enviado a Suscriber:%s",m[3][indice]);
 						fprintf(flog,"Suscriber desconectado, connfd:%d\n",connfd);
+						if(verbose==1){
+						printf("Mensaje enviado a Suscriber:%s",m[3][indice]);
+			printf("Suscriber desconectado, connfd:%d\n",connfd);
+		}
 						fclose(flog);
 				}
 			
@@ -672,7 +676,13 @@ void atender_cliente2(int connfd,int *j)
 							exit(1);
 						}
 						fprintf(flog,"Mensaje enviado a Suscriber:%s",m[3][indice]);
+						
 						fprintf(flog,"Suscriber desconectado, connfd:%d\n",connfd);
+						if(verbose==1){
+						printf("Mensaje enviado a Suscriber:%s",m[3][indice]);
+			printf("Suscriber desconectado, connfd:%d\n",connfd);
+		}
+						
 						fclose(flog);
 					}
 					
