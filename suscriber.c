@@ -89,10 +89,22 @@ int main(int argc, char **argv)
 	printf("Conectado exitosamente a %s en el puerto %s.\n", hostname, port);
 	ssignal(SIGINT, recoger_hijos);
 	linea_consola = (char *) calloc(1, MAXLINE);
-	printf("Ingrese texto para enviar al servidor, escriba CHAO para terminar...\n");
+	printf("Ingrese topico para pedir al servidor, escriba CHAO para terminar...\n");
+	printf("Ejemplo: <topico>\n");
 	printf("> ");
 	l = getline(&linea_consola, &max, stdin);
+	int iproc=contar_procesos(linea_consola," ");
+	
+	if(iproc!=1 ){
+		printf("No ingreso bien el topico \n");
+		return 0;
+	}
+	if(strcmp(linea_consola,"\n")==0){
+		printf("No ingreso topico \n");
+		return 0;
+	}
 	n = write(clientfd, linea_consola, l); //lee desde consola
+	
 	while(l > 0){
 		 //Envia al servidor
 		if(n<=0)
