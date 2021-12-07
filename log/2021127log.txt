@@ -1,0 +1,29 @@
+Suscriber connectado, connfd:6
+Suscriber connectado, connfd:6
+Suscriber connectado, connfd:7
+Publisher connectado, connfd:6
+Topico topico1 ingresado con mensaje: men1
+Publisher desconectado, connfd:6
+Mensaje enviado a Suscriber:men1
+Suscriber desconectado, connfd:6
+Publisher connectado, connfd:7
+Topico topico1 ingresado con mensaje: men2
+Publisher desconectado, connfd:7
+Mensaje enviado a Suscriber:men2
+Suscriber desconectado, connfd:6
+Publisher connectado, connfd:6
+Topico topico2 ingresado con mensaje: men3
+Publisher desconectado, connfd:6
+Mensaje enviado a Suscriber:men3
+Suscriber desconectado, connfd:7
+Suscriber connectado, connfd:6
+Publisher connectado, connfd:6
+Topico cualquier ingresado con mensaje: cosa
+Publisher desconectado, connfd:6
+Mensaje enviado a Suscriber:cosa
+Suscriber desconectado, connfd:6
+Publisher connectado, connfd:7
+Topico x ingresado con mensaje: y
+Publisher desconectado, connfd:7
+Mensaje enviado a Suscriber:y
+Suscriber desconectado, connfd:6
