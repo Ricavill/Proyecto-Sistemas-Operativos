@@ -172,9 +172,16 @@ int sizec=0;
 	
 	
 } 
+struct stat st={0};
 int main(int argc, char **argv)
-{
+{	if(stat("log",&st)==-1){
+		mkdir("log",0700);
+	}
+	if(stat("topico",&st)==-1){
+		mkdir("topico",0700);
+	}
 	if(access("topico/topico.txt",F_OK)!=0){
+			
 			
 			FILE *f=fopen("topico/topico.txt","w");
 			//FILE *f1=fopen(str3,"w");
