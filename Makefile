@@ -23,4 +23,4 @@ debug: clean shell
 
 
 clean:
-	rm -rf broker suscriber publisher *.o topico
+	rm -rf broker suscriber publisher *.o
