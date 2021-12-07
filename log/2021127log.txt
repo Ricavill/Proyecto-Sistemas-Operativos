@@ -27,3 +27,42 @@ Topico x ingresado con mensaje: y
 Publisher desconectado, connfd:7
 Mensaje enviado a Suscriber:y
 Suscriber desconectado, connfd:6
+Publisher connectado, connfd:6
+Topico prueba ingresado con mensaje: mensaje
+Publisher desconectado, connfd:6
+Publisher connectado, connfd:7
+Topico otra ingresado con mensaje: prueba
+Publisher desconectado, connfd:7
+Publisher connectado, connfd:6
+Topico Ricardo ingresado con mensaje: 1
+Publisher desconectado, connfd:6
+Suscriber connectado, connfd:6
+Publisher connectado, connfd:7
+Topico toma ingresado con mensaje: 1
+Publisher desconectado, connfd:7
+Mensaje enviado a Suscriber:1
+Suscriber desconectado, connfd:6
+Suscriber connectado, connfd:6
+Publisher connectado, connfd:6
+Topico pajaro ingresado con mensaje: azul
+Publisher desconectado, connfd:6
+Mensaje enviado a Suscriber:azul
+Suscriber desconectado, connfd:6
+Publisher connectado, connfd:7
+Topico hola ingresado con mensaje: comoPublisher desconectado, connfd:7
+Publisher connectado, connfd:6
+Topico hola ingresado con mensaje: comoPublisher desconectado, connfd:6
+Publisher connectado, connfd:6
+Topico hola ingresado con mensaje: jejejej como
+Publisher desconectado, connfd:6
+Suscriber connectado, connfd:6
+Mensaje enviado a Suscriber:jejejej como
+Suscriber desconectado, connfd:6
+Publisher connectado, connfd:7
+Topico hola ingresado con mensaje: chuta
+Publisher desconectado, connfd:7
+Mensaje enviado a Suscriber:chuta
+Suscriber desconectado, connfd:6
+Publisher connectado, connfd:6
+Topico hola ingresado con mensaje: como estas
+Publisher desconectado, connfd:6

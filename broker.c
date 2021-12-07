@@ -376,33 +376,6 @@ int main(int argc, char **argv)
 			printf("\nserver escuchando en puerto %s...\n", port);
 	
 	
-	/*
-	while (1) {
-		clientlen = sizeof(clientaddr);
-		connfd = accept(listenfd, (struct sockaddr *)&clientaddr, &clientlen);
-
-		printf("hola");
-		//El proceso hijo atiende al cliente
-		if(fork() == 0){
-			close(listenfd);*/
-
-			/* Determine the domain name and IP address of the client */
-			/*
-			hp = gethostbyaddr((const char *)&clientaddr.sin_addr.s_addr,
-						sizeof(clientaddr.sin_addr.s_addr), AF_INET);
-			haddrp = inet_ntoa(clientaddr.sin_addr);
-
-			printf("server conectado a %s (%s)\n", hp->h_name, haddrp);
-			atender_cliente(connfd);
-			printf("server desconectando a %s (%s)\n", hp->h_name, haddrp);
-
-			close(connfd);
-
-			exit(0);
-		}
-
-		close(connfd);
-	}*/
 	
 		pthread_t tid;
 		sbuf_init(&sbuf,11);
@@ -758,6 +731,10 @@ void atender_cliente(int connfd,int * j)
 		n = 0;
 		
 		char **c=separar_mensaje(buf);
+		/*
+		for(int i=0;i<(sizeof(c)/sizeof(c[0]));i++){
+			printf("OOO:%s\n",c[i]);
+		}*/
 		sem_wait(&mutex);
 		//printf("PRUEBA %s\n",str2);
 		
@@ -791,10 +768,10 @@ void atender_cliente(int connfd,int * j)
 			if(strcmp(linea[2],c[0])==0 ){
 				length=length+1;
 				encontro=1;
-				fprintf(fptr2,"%d %d %s %s",length,contador,topico,c[1]);
+				fprintf(fptr2,"%d|%d|%s|%s",length,contador,topico,c[1]);
 			}
 			else{
-				fprintf(fptr2,"%d %d %s %s",length,-1,topico,mensaje);
+				fprintf(fptr2,"%d|%d|%s|%s",length,-1,topico,mensaje);
 			}
 			//int l =snprintf(NULL,0,"%d",length);
 			//char * valor=malloc(l+1);
@@ -813,7 +790,7 @@ void atender_cliente(int connfd,int * j)
 			contador++;
 		}
 		if(encontro==0){
-			fprintf(fptr2,"%d %d %s %s",1,contador,c[0],c[1]);
+			fprintf(fptr2,"%d|%d|%s|%s",1,contador,c[0],c[1]);
 		} 
 		
 		
@@ -835,7 +812,7 @@ void atender_cliente(int connfd,int * j)
 			char * topico=strdup(linea[2]);
 			char * mensaje=strdup(linea[3]);
 			//printf("%s %s %s",linea[0],linea[1],linea[2]);
-			fprintf(fptr,"%d %d %s %s",length,p,topico,mensaje);
+			fprintf(fptr,"%d|%d|%s|%s",length,p,topico,mensaje);
 			free(linea);
 			free(topico);
 			free(mensaje);
@@ -880,7 +857,7 @@ char **separar_mensaje(char *buf){
       		topmen[j] =malloc(500);
 		}
 		
-		separar_procesos(buf," ",topmen);
+		separar_procesos(buf,"|",topmen);
 		
 		
 		return topmen;

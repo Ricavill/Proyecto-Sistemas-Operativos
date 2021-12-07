@@ -63,6 +63,7 @@ int contar_procesos(char *linea,char *delim){
 
 	while(tokens!=NULL){
 		tokens=strtok(NULL,delim);
+		
 		i++;
 
 }

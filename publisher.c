@@ -67,13 +67,13 @@ int main(int argc, char **argv)
 	printf("Conectado exitosamente a %s en el puerto %s.\n", hostname, port);
 
 	linea_consola = (char *) calloc(1, MAXLINE);
-	printf("Ingrese <Topico> <Mensaje>\n");
+	printf("Ingrese <Topico>|<Mensaje>\n");
 	printf("> ");
 	l = getline(&linea_consola, &max, stdin);
-	int iproc=contar_procesos(linea_consola," ");
+	int iproc=contar_procesos(linea_consola,"|");
 	
 	if(iproc!=2 ){
-		printf("No ingreso bien el topico junto con el mensaje\n");
+		printf("Solo ingreso topico o no ingreso nada\n");
 		return 0;
 	} //lee desde consola
 	while(l > 0){
