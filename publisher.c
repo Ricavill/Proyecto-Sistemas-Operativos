@@ -6,7 +6,7 @@
 void print_help(char *command)
 {
 	printf("Cliente ejemplo aplicación eco.\n");
-	printf("uso:\n %s <hostname> <puerto> <topico><valor>\n", command);
+	printf("uso:\n %s <hostname>  \n", command);
 	printf(" %s -h\n", command);
 	printf("Opciones:\n");
 	printf(" -h\t\t\tAyuda, muestra este mensaje\n");
@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 	//Socket
 	int clientfd;
 	//Direcciones y puertos
-	char *hostname, *port,*topico,*valor;
+	char *hostname, *port;
 
 	//Lectura desde consola
 	char *linea_consola;
@@ -34,33 +34,21 @@ int main(int argc, char **argv)
 				print_help(argv[0]);
 				return 0;
 			default:
-				fprintf(stderr, "uso: %s <hostname> <puerto> <topico> <valor>\n", argv[0]);
+				fprintf(stderr, "uso: %s <hostname> \n", argv[0]);
 				fprintf(stderr, "     %s -h\n", argv[0]);
 				return 1;
 		}
 	}
 
-	if(argc != 5){
-		fprintf(stderr, "uso: %s <hostname> <puerto> <topico> <valor>\n", argv[0]);
+	if(argc != 2){
+		fprintf(stderr, "uso: %s <hostname> \n", argv[0]);
 		fprintf(stderr, "     %s -h\n", argv[0]);
 		return 1;
 	}else{
 		hostname = argv[1];
-		port = argv[2];
+		port = "8081";
 		
-		topico = argv[3];
-		valor = argv[4];
-		//printf("%s\n",topico);
-		//printf("%s\n",valor);
-		if(topico==NULL){
-			printf("No se ingreso topico");
-			return 0;
-		}
 		
-		if(valor==NULL){
-			printf("No se ingreso valor");
-			return 0;
-		}
 	}
 
 	//Valida el puerto
@@ -79,14 +67,11 @@ int main(int argc, char **argv)
 	printf("Conectado exitosamente a %s en el puerto %s.\n", hostname, port);
 
 	linea_consola = (char *) calloc(1, MAXLINE);
-	int st=strlen(topico)+strlen(valor);
-	char r[st+2];
-	snprintf(r,st+2,"%s %s",topico,valor);
-	
+	printf("Ingrese <Topico> <Mensaje>\n");
 	printf("> ");
 	l = getline(&linea_consola, &max, stdin);
 	int iproc=contar_procesos(linea_consola," ");
-	printf("%d\n",iproc);
+	
 	if(iproc!=2 ){
 		printf("No ingreso bien el topico junto con el mensaje\n");
 		return 0;

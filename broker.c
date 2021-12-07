@@ -11,10 +11,30 @@
 #include <pthread.h>
 #include <semaphore.h>
 #define SBUFSIZE 100
-void atender_cliente(int connfd);
-
+int verbose;
+int contadorHash=0;
+int flagescritura=0;
+int flagcarga=1;
+int buscarIndice(char * buf);
+char *m[3][100];
+void *recargarMatriz(void *vargp);
+void atender_cliente(int connfd,int* j);
+sem_t mutex;
+sem_t mmutex;
 void *thread(void *vargp);
+void *thread2(void *vargp);
+char **separar_mensaje(char *buf);
+void atender_cliente2(int connfd, int *j);
+int revisarTopico(char ***m);
+int revisarEspacioTopico(char ***m);
 sbuf_t sbuf;
+char **separar_topicos(char *buf);
+struct fd_matriz{
+	int fd[2];
+	char ***matrizTopicos;
+	sem_t sem;
+	
+};
 struct timeval current_time;
 void print_help(char *command)
 {
@@ -36,20 +56,37 @@ void recoger_hijos(int signal){
 	return;
 }
 int maxTopicos=50;
-char *matrizTopicos[2][50];
+
 char *str;
 char *str2;
-void crearDocumento();
+char *str5;
+char *str6;
 void crearDocumento(){
 	str2=malloc(strlen(str)+4);
 	strcat(str2,"log/");
 	strcat(str2,str);
+	char * str6=strdup(str2);
+	int cont=strlen(str2);
+	str6[(cont-1)-4]='p';
+	str6[(cont-1)-6]='t';
+	//printf("%s",str6);
+	
+	
 	
 	
 	if(access(str2,F_OK)!=0){
 			
 			FILE *f=fopen(str2,"w");
+			//FILE *f1=fopen(str3,"w");
 			fclose(f);
+			//fclose(f1);
+	}
+	if(access(str6,F_OK)!=0){
+			
+			FILE *f=fopen(str6,"w");
+			
+			fclose(f);
+			
 	}
 	
 		
@@ -59,7 +96,9 @@ void leerDocumento(){
 
 int pid=fork();
 	if(pid==0){
-	
+		
+		sleep(1);
+		
 	
 		
 		
@@ -69,6 +108,7 @@ int pid=fork();
 			
 		}
 		else{
+		
 			execvp(args[0],args);	
 			printf("No existe log diario");
 		}
@@ -77,6 +117,7 @@ int pid=fork();
 		
 		exit(0);
 	}
+	
 	
 	
 	
@@ -96,6 +137,7 @@ int sizec=0;
 	}
 	//printf("%d\n",sizec);
 	str=malloc(sizeof(char)*sizec);
+	str5=malloc(sizeof(char)*sizec);
 	//char str[sizec+7];
 	int n=0;
 	for(int i=0;i<3;i++){
@@ -106,7 +148,12 @@ int sizec=0;
 		
 		for(int j=0;j<strlen(str2);j++){
 			str[j+n]=str2[j];
+			str5[j+n]=str2[j];
 		}
+		
+		
+		
+		
 		n=n+length;
 		//strcat(str,str2);
 		free(str2);
@@ -114,14 +161,25 @@ int sizec=0;
 	}
 	
 	strcat(str,"log.txt");
-	//printf("%s\n",str);
+	strcat(str5,"top.txt");
+	return;
+
+	
 	
 	
 	
 } 
 int main(int argc, char **argv)
 {
+	if(access("topico/topico.txt",F_OK)!=0){
+			
+			FILE *f=fopen("topico/topico.txt","w");
+			//FILE *f1=fopen(str3,"w");
+			fclose(f);
+			//fclose(f1);
+		}
 	int log=0;
+	verbose=0;
 	
 	time_t t=time(NULL);
 	struct tm tm=*localtime(&t);
@@ -139,19 +197,22 @@ int main(int argc, char **argv)
 	}
 	}*/
 	//Sockets
-	int listenfd, connfd;
+	int listenfd;
 	unsigned int clientlen;
 	//Direcciones y puertos
 	struct sockaddr_in clientaddr;
-	struct hostent *hp;
-	char *haddrp, *port;
+	
+	char  *port;
 
-	while ((opt = getopt (argc, argv, "hl")) != -1){
+	while ((opt = getopt (argc, argv, "hlv")) != -1){
 		switch(opt)
 		{
 			case 'h':
 				print_help(argv[0]);
 				return 0;
+			case 'v':
+				verbose=1;
+				break;
 			case 'l':
 				log=1;
 				break;
@@ -163,9 +224,11 @@ int main(int argc, char **argv)
 		}
 	}
 	crearDocumento();
-	if(log){
-		leerDocumento( );
-	}
+	
+	
+	
+	
+	
 
 	
 	
@@ -173,15 +236,46 @@ int main(int argc, char **argv)
 	
 	//Registra funcion para recoger hijos zombies
 	signal(SIGCHLD, recoger_hijos);
+	/*
+	struct fd_matriz objeto;
+	objeto.matrizTopicos=malloc(sizeof(void)*2);
+	objeto.matrizTopicos[0]=malloc(sizeof(void)*50);
+	objeto.matrizTopicos[1]=malloc(sizeof(void)*50);
+	
+	
+		for(int j=0;j<2;j++){
+		
+			for(int i=0;i<50;i++){
+				objeto.matrizTopicos[j][i]=(char*)calloc(500,1);
+				objeto.matrizTopicos[j][i]="";
+			}
+			
+		}
+		//objeto.matrizTopicos[0][0]="hola";*/
+	
+	
+	sem_init(&mutex,0,1);
+	sem_init(&mmutex,0,1);
+	
+	
+	signal(SIGCHLD, recoger_hijos);
 	int fd[2];
-	pipe(fd);
-	int pidoriginal=fork();
 
-	
+	if(pipe(fd)<0){
+		printf("ERROR CON PIPE");
+		exit(1);
+	}
+	if(fcntl(fd[0],F_SETFL,O_NONBLOCK)<0){
+		printf("ERROR CON FCNTL");
+		exit(2);
+	}
 	//proceso donde se escucharan a los publishers
-	if(pidoriginal==0){
+	if(fork()==0){
 	
-		signal(SIGCHLD, recoger_hijos);
+	
+	
+		
+		
 		 port="8081";
 
 		//Valida el puerto
@@ -190,21 +284,27 @@ int main(int argc, char **argv)
 			fprintf(stderr, "Puerto: %s invalido. Ingrese un número entre 1 y %d.\n", port, USHRT_MAX);
 			return 1;
 		}
-		printf("fff");
+		
 		
 		listenfd = open_listenfd(port);
 
-		if(listenfd < 0)
+		if(listenfd < 0){
 			connection_error(listenfd);
-		printf("server escuchando en puerto %s...\n", port);
+			}
+		
+			printf("\nserver escuchando en puerto %s...\n", port);
+		
+		
 		
 		
 		pthread_t tid;
 		sbuf_init(&sbuf,11);
 
 		for(int i=0; i<10;i++){
-			pthread_create(&tid,NULL,thread,NULL);	
+			pthread_create(&tid,NULL,thread,fd);	
 		}
+			
+		
 		int connfd;
 		clientlen = sizeof(clientaddr);
 		while (1) {
@@ -225,6 +325,25 @@ int main(int argc, char **argv)
 	
 		
 	}
+	else{
+	
+	
+
+		if(log){
+		leerDocumento( );
+	}
+	
+	
+	
+	//sleep(10);
+	
+	
+
+	
+	
+	
+
+	
 	//Parte de suscriber
 	 port="8080";
 
@@ -243,8 +362,11 @@ int main(int argc, char **argv)
 	if(listenfd < 0)
 		connection_error(listenfd);
 
-	printf("server escuchando en puerto %s...\n", port);
-
+	
+			printf("\nserver escuchando en puerto %s...\n", port);
+	
+	
+	/*
 	while (1) {
 		clientlen = sizeof(clientaddr);
 		connfd = accept(listenfd, (struct sockaddr *)&clientaddr, &clientlen);
@@ -252,9 +374,10 @@ int main(int argc, char **argv)
 		printf("hola");
 		//El proceso hijo atiende al cliente
 		if(fork() == 0){
-			close(listenfd);
+			close(listenfd);*/
 
 			/* Determine the domain name and IP address of the client */
+			/*
 			hp = gethostbyaddr((const char *)&clientaddr.sin_addr.s_addr,
 						sizeof(clientaddr.sin_addr.s_addr), AF_INET);
 			haddrp = inet_ntoa(clientaddr.sin_addr);
@@ -269,35 +392,317 @@ int main(int argc, char **argv)
 		}
 
 		close(connfd);
+	}*/
+	
+		pthread_t tid;
+		sbuf_init(&sbuf,11);
+	
+			
+		
+		for(int i=0; i<10;i++){
+			pthread_create(&tid,NULL,thread2,fd);	
+		}
+		pthread_create(&tid,NULL,recargarMatriz,fd);
+		int connfd;
+		clientlen = sizeof(clientaddr);
+		while (1) {
+			
+			connfd = accept(listenfd, (struct sockaddr *)&clientaddr, &clientlen);
+					sbuf_insert(&sbuf,connfd);	
+
+
+		//	pthread_create(&tid,NULL,thread,connfd_ptr);
+		}
+		close(connfd);
 	}
+	
+	
 }
 void *thread(void *vargp){
 	
 
 	//Entra a estado detach antes de atender al cliente
+	int  *j=(int *)vargp;
+	
 	pthread_detach(pthread_self());
+	
+	
+	
 
 	//Atiende al cliente
 	while(1){
+		
 	int connfd=sbuf_remove(&sbuf);
-		atender_cliente(connfd);
+		atender_cliente(connfd,j);
 		
 		close(connfd);
 	}
 	
+	
 		
 	
 }
+void *thread2(void *vargp){
+	
 
-void atender_cliente(int connfd)
+	//Entra a estado detach antes de atender al cliente
+	int *j=(int *)vargp;
+
+		
+	
+	
+	pthread_detach(pthread_self());
+	
+
+	//Atiende al cliente
+	while(1){
+	int connfd=sbuf_remove(&sbuf);
+		atender_cliente2(connfd,j);
+		printf("OK");
+		
+		close(connfd);
+	}
+	
+	
+		
+	
+}
+void *recargarMatriz(void *vargp){
+
+	//m[3][100];
+	//m[0]=calloc(sizeof(char**));
+	//m[0]=calloc(sizeof(char**));
+	//m[0]=calloc(sizeof(char**));
+	pthread_detach(pthread_self());
+	int *j=(int *)vargp;
+	for(int i=0;i<100;i++){
+		for(int j=0;j<3;j++){
+			m[j][i]=calloc(500,sizeof(char));
+			m[j][i]="";
+		}
+	
+	}
+	//m[0][0]="hola";
+	
+	
+	
+	FILE *fptr=fopen("topico/topico.txt","r+");
+	int contadorval=0;
+	char line[256];
+	while(fgets(line,sizeof(line),fptr)){
+			
+			char **linea=separar_mensaje(line);
+			
+			//int length = atoi(linea[0]);
+			char * topico=strdup(linea[1]);
+			char * mensaje=strdup(linea[2]);
+			//printf("h:%d\n",length);
+			
+			if(contadorval<100){
+				m[0][contadorval]=strdup(linea[0]);
+				m[1][contadorval]=strdup(linea[1]);
+				m[2][contadorval]=strdup(linea[2]);
+			
+			}
+			//int l =snprintf(NULL,0,"%d",length);
+			//char * valor=malloc(l+1);
+			//snprintf(valor,l+1,"%d",length);
+			//printf("%s %s %s",linea[0],linea[1],linea[2]);
+			
+			
+			
+			free(linea);
+			free(topico);
+			free(mensaje);
+			contadorval++;
+			//analizar la linea 
+			// arreglar la linea
+			// escribir sobre la linea
+		}
+		fclose(fptr);
+		
+	while(1){
+		sem_wait(&mmutex);
+		char f[2];
+		
+		int nread=read(j[0],&f,sizeof(f));
+		
+		 if(nread==2){
+		 	contadorHash++;
+		 	FILE *fptr=fopen("topico/topico.txt","r+");
+	int contadorval=0;
+	char line[256];
+	while(fgets(line,sizeof(line),fptr)){
+			
+			char **linea=separar_mensaje(line);
+			
+			//int length = atoi(linea[0]);
+			char * topico=strdup(linea[1]);
+			char * mensaje=strdup(linea[2]);
+			//printf("h:%d\n",length);
+			
+			if(contadorval<100){
+				m[0][contadorval]=strdup(linea[0]);
+				m[1][contadorval]=strdup(linea[1]);
+				m[2][contadorval]=strdup(linea[2]);
+			
+			}
+			//int l =snprintf(NULL,0,"%d",length);
+			//char * valor=malloc(l+1);
+			//snprintf(valor,l+1,"%d",length);
+			//printf("%s %s %s",linea[0],linea[1],linea[2]);
+			
+			
+			
+			free(linea);
+			free(topico);
+			free(mensaje);
+			contadorval++;
+			//analizar la linea 
+			// arreglar la linea
+			// escribir sobre la linea
+		}
+		fclose(fptr);
+		
+			
+		}
+		sem_post(&mmutex);
+	}
+		
+	
+	
+}
+void atender_cliente2(int connfd,int *j)
+{
+printf("prueba");
+	/*
+	char b[2];
+	int t=read(j[0],b,sizeof(b));
+	printf("JJJJ%s y %d\n",b,t);*/
+	int n;
+	char buf[MAXLINE] = {0};
+	
+	//int flag=0;
+	n = read(connfd, buf, MAXLINE);
+	FILE *flog=fopen(str2,"a+");
+		if(flog==NULL){
+			printf("ERROR LOG");
+			exit(1);
+		}
+		fprintf(flog,"Suscriber connectado, connfd:%d\n",connfd);
+		fclose(flog);
+		if(verbose==1){
+			printf("Suscriber connectado, connfd:%d\n",connfd);
+		}
+		printf("prueba");
+		if(n <= 0){
+			return;
+			}
+	
+	//int r=1;
+	//close(j[1]);
+	int contadorTopico=0;
+	int contadorTopicoHash=0;
+	int indice=-1;
+	
+	while(1){
+		if(strcmp(buf, "CHAO\n") == 0){
+			write(connfd, "BYE\n", 4);
+			FILE *flog=fopen(str2,"a+");
+			if(flog==NULL){
+				printf("ERROR LOG");
+				exit(1);
+			}
+			fprintf(flog,"Mensaje 'CHAO' enviado a Suscriber");
+			fprintf(flog,"Suscriber desconectado, connfd:%d\n",connfd);
+			fclose(flog);
+			return;
+		}
+		sem_wait(&mmutex);
+		if(strcmp(buf,"#")==0){
+			
+			
+		}
+		else{
+			if(contadorTopico==0){
+			
+			indice=buscarIndice(buf);
+			}
+			if(indice!=-1){
+				int length = atoi(m[0][indice]);
+				if(contadorTopico<length){
+					if(indice!=-1){
+						write(connfd, m[2][indice], strlen(m[2][indice]));
+					contadorTopico=length;
+						FILE *flog=fopen(str2,"a+");
+						if(flog==NULL){
+							printf("ERROR LOG");
+							exit(1);
+						}
+						fprintf(flog,"Mensaje enviado a Suscriber:%s",m[2][indice]);
+						fprintf(flog,"Suscriber desconectado, connfd:%d\n",connfd);
+						fclose(flog);
+					}
+					
+				}
+				
+			}
+		}
+		
+		
+		sem_post(&mmutex);
+		
+		
+		/*
+		else if(nread==0){
+		
+		}
+		else if(nread==1){
+			printf("ENTRE CON PIPE YEY");
+			if(r==1){
+				printf("ENTRE CON PIPE YEY");
+				r=0;
+			}
+		
+		}*/
+		
+		//Detecta "CHAO" y se desconecta del cliente
+		
+
+		//Reenvía el mensaje al cliente
+		
+
+		//memset(buf, 0, MAXLINE); 
+		//Encera el buffer
+	}
+}
+
+void atender_cliente(int connfd,int * j)
 {
 	int n;
 	char buf[MAXLINE] = {0};
-
+	//int * j=(int *)vargp;
+	
+	//close(j[0]);
+	
+	
+	
 	while(1){
+	
 		n = read(connfd, buf, MAXLINE);
+		FILE *flog=fopen(str2,"a+");
+		if(flog==NULL){
+			printf("ERROR LOG");
+			exit(1);
+		}
+		fprintf(flog,"Publisher connectado, connfd:%d\n",connfd);
+		if(verbose==1){
+			printf("Publisher connectado, connfd:%d\n",connfd);
+		}
 		if(n <= 0)
 			return;
+		
+		
 
 		printf("Recibido: %s", buf);
 
@@ -309,12 +714,183 @@ void atender_cliente(int connfd)
 
 		//Reenvía el mensaje al cliente
 		n = 0;
+		
+		char **c=separar_mensaje(buf);
+		sem_wait(&mutex);
+		//printf("PRUEBA %s\n",str2);
+		
+		fprintf(flog,"Topico %s ingresado con mensaje: %s",c[0],c[1]);
+		if(verbose==1){
+		printf("Topico %s ingresado con mensaje: %s",c[0],c[1]);
+		}
+		
+		FILE *fptr=fopen("topico/topico.txt","r+");
+		FILE *fptr2=fopen("topico/topicotemp.txt","w");
+		char line[256];
+		if(fptr==NULL){
+			printf("ERROR");
+			exit(1);
+			
+		}
+		int encontro=0;
+		//int r=1;
+		
+		
+		while(fgets(line,sizeof(line),fptr)){
+			
+			char **linea=separar_mensaje(line);
+			
+			int length = atoi(linea[0]);
+			char * topico=strdup(linea[1]);
+			char * mensaje=strdup(linea[2]);
+			//printf("h:%d\n",length);
+			
+			if(strcmp(linea[1],c[0])==0 ){
+				length=length+1;
+				encontro=1;
+				fprintf(fptr2,"%d %s %s",length,topico,c[1]);
+			}
+			else{
+				fprintf(fptr2,"%d %s %s",length,topico,mensaje);
+			}
+			//int l =snprintf(NULL,0,"%d",length);
+			//char * valor=malloc(l+1);
+			//snprintf(valor,l+1,"%d",length);
+			//printf("%s %s %s",linea[0],linea[1],linea[2]);
+			
+			
+			
+			free(linea);
+			free(topico);
+			//free(mensaje);
+			//analizar la linea 
+			// arreglar la linea
+			// escribir sobre la linea
+		}
+		if(encontro==0){
+			fprintf(fptr2,"%d %s %s",1,c[0],c[1]);
+		} 
+		
+		
+		fclose(fptr);
+		fclose(fptr2);
+		//printf("SALI WHILE");
+		 fptr=fopen("topico/topico.txt","w");
+		 fptr2=fopen("topico/topicotemp.txt","r");
+		
+		if(fptr2==NULL){
+			printf("ERROR");
+			exit(1);
+		}
+		while(fgets(line,sizeof(line),fptr2)){
+			//printf("h:%s\n",line);
+			char **linea=separar_mensaje(line);
+			int length = atoi(linea[0]);
+			char * topico=strdup(linea[1]);
+			char * mensaje=strdup(linea[2]);
+			//printf("%s %s %s",linea[0],linea[1],linea[2]);
+			fprintf(fptr,"%d %s %s",length,topico,mensaje);
+			free(linea);
+			free(topico);
+			free(mensaje);
+			//analizar la linea 
+			// arreglar la linea
+			// escribir sobre la linea
+		} 
+		
+		
+		fclose(fptr);
+		fclose(fptr2);
+		printf("%d%dJEJE\n",j[0],j[1]);
+	char k[2]={'1','\n'};
+	write(j[1],&k,sizeof(k));
+	
+		
+		
+		sem_post(&mutex);
+		
+		fprintf(flog,"Publisher desconectado, connfd:%d\n",connfd);
+		if(verbose==1){
+		printf("Publisher desconectado, connfd:%d\n",connfd);
+		}
+		fclose(flog);
+		
+		
 		if(n <= 0)
 			return;
 
 		memset(buf, 0, MAXLINE); 
+		
 		return;//Encera el buffer
 	}
 }
+
+char **separar_mensaje(char *buf){
+	char ** topmen;
+		topmen=malloc((3+1)*sizeof(char*));
+	
+		
+		for(int  j=0;j<3;j++){
+      		topmen[j] =malloc(500);
+		}
+		
+		separar_procesos(buf," ",topmen);
+		
+		
+		return topmen;
+}
+
+
+char **separar_topicos(char *buf){
+	char ** topmen;
+		topmen=malloc((2+1)*sizeof(char*));
+	
+		
+		for(int  j=0;j<2;j++){
+      		topmen[j] =malloc(500);
+		}
+		
+		separar_procesos(buf," ",topmen);
+		
+		
+		return topmen;
+}
+
+int revisarTopico(char ***m){
+	
+		printf("Entre revisar topico");
+		/*
+			for(int i=0;i<50;i++){
+			
+				if(strcmp(m[0][i],topico)){
+					return i;
+				}
+			}*/
+			
+		
+		return -1;
+}
+int revisarEspacioTopico(char ***m){
+	
+		
+			for(int i=0;i<50;i++){
+				if(strcmp(m[0][i],"")==0){
+					return i;
+				}
+			}
+			
+		
+		return -1;
+}
+int buscarIndice(char * buf){
+	
+	for(int i=0;i<100;i++){
+		if(strcmp(m[1][i],buf)){
+			return i;
+		}
+	}
+	return -1;
+}
+
 
 

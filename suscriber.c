@@ -1,15 +1,38 @@
 #include <getopt.h>
 #include <limits.h>
-
+#include <sys/wait.h>
+#include <time.h>
+#include <sys/time.h>
 #include "common.h"
+#include <sys/resource.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+int c;
+
 
 void print_help(char *command)
 {
 	printf("Cliente ejemplo aplicación eco.\n");
-	printf("uso:\n %s <hostname> <puerto>\n", command);
+	printf("uso:\n %s <hostname>\n", command);
 	printf(" %s -h\n", command);
 	printf("Opciones:\n");
 	printf(" -h\t\t\tAyuda, muestra este mensaje\n");
+}
+void recoger_hijos(int signal){
+	char buf[MAXLINE] = {0};
+	buf[0]='C';
+	buf[1]='H';
+	buf[2]='A';
+	buf[3]='O';
+	buf[3]='\n';
+	
+	write(c, buf, strlen(buf)+1);
+	printf("\n");
+	exit(0);
+	return;
 }
 
 int main(int argc, char **argv)
@@ -34,19 +57,19 @@ int main(int argc, char **argv)
 				print_help(argv[0]);
 				return 0;
 			default:
-				fprintf(stderr, "uso: %s <hostname> <puerto>\n", argv[0]);
+				fprintf(stderr, "uso: %s <hostname> \n", argv[0]);
 				fprintf(stderr, "     %s -h\n", argv[0]);
 				return 1;
 		}
 	}
 
-	if(argc != 3){
-		fprintf(stderr, "uso: %s <hostname> <puerto>\n", argv[0]);
+	if(argc != 2){
+		fprintf(stderr, "uso: %s <hostname> \n", argv[0]);
 		fprintf(stderr, "     %s -h\n", argv[0]);
 		return 1;
 	}else{
 		hostname = argv[1];
-		port = argv[2];
+		port = "8080";
 	}
 
 	//Valida el puerto
@@ -58,22 +81,24 @@ int main(int argc, char **argv)
 
 	//Se conecta al servidor retornando un socket conectado
 	clientfd = open_clientfd(hostname, port);
+	c=clientfd;
 
 	if(clientfd < 0)
 		connection_error(clientfd);
 
 	printf("Conectado exitosamente a %s en el puerto %s.\n", hostname, port);
-
+	ssignal(SIGINT, recoger_hijos);
 	linea_consola = (char *) calloc(1, MAXLINE);
 	printf("Ingrese texto para enviar al servidor, escriba CHAO para terminar...\n");
 	printf("> ");
-	l = getline(&linea_consola, &max, stdin); //lee desde consola
+	l = getline(&linea_consola, &max, stdin);
+	n = write(clientfd, linea_consola, l); //lee desde consola
 	while(l > 0){
-		n = write(clientfd, linea_consola, l); //Envia al servidor
+		 //Envia al servidor
 		if(n<=0)
 			break;
 
-		//n = read(clientfd, read_buffer, MAXLINE); //Lee respuesta del servidor
+		n = read(clientfd, read_buffer, MAXLINE); //Lee respuesta del servidor
 		if(n<=0)
 			break;
 
@@ -82,8 +107,7 @@ int main(int argc, char **argv)
 
 		//Volver a leer desde consola
 		printf("> ");
-		l=-1;
-		//l = getline(&linea_consola, &max, stdin);
+		
 	}
 
 
