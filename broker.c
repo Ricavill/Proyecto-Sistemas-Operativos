@@ -12,11 +12,14 @@
 #include <semaphore.h>
 #define SBUFSIZE 100
 int verbose;
+int contadorHash;
+int indiceGlobal;
+int buscarMayor();
 int contadorHash=0;
 int flagescritura=0;
 int flagcarga=1;
 int buscarIndice(char * buf);
-char *m[3][100];
+char *m[4][100];
 void *recargarMatriz(void *vargp);
 void atender_cliente(int connfd,int* j);
 sem_t mutex;
@@ -458,7 +461,7 @@ void *thread2(void *vargp){
 	while(1){
 	int connfd=sbuf_remove(&sbuf);
 		atender_cliente2(connfd,j);
-		printf("OK");
+		
 		
 		close(connfd);
 	}
@@ -476,7 +479,7 @@ void *recargarMatriz(void *vargp){
 	pthread_detach(pthread_self());
 	int *j=(int *)vargp;
 	for(int i=0;i<100;i++){
-		for(int j=0;j<3;j++){
+		for(int j=0;j<4;j++){
 			m[j][i]=calloc(500,sizeof(char));
 			m[j][i]="";
 		}
@@ -494,16 +497,18 @@ void *recargarMatriz(void *vargp){
 			char **linea=separar_mensaje(line);
 			
 			//int length = atoi(linea[0]);
-			char * topico=strdup(linea[1]);
-			char * mensaje=strdup(linea[2]);
+			char * topico=strdup(linea[2]);
+			char * mensaje=strdup(linea[3]);
 			//printf("h:%d\n",length);
 			
 			if(contadorval<100){
 				m[0][contadorval]=strdup(linea[0]);
 				m[1][contadorval]=strdup(linea[1]);
 				m[2][contadorval]=strdup(linea[2]);
+				m[3][contadorval]=strdup(linea[3]);
 			
 			}
+			//printf("PRUEBA:%s %s",m[2][contadorval],m[3][contadorval]);
 			//int l =snprintf(NULL,0,"%d",length);
 			//char * valor=malloc(l+1);
 			//snprintf(valor,l+1,"%d",length);
@@ -523,12 +528,14 @@ void *recargarMatriz(void *vargp){
 		
 	while(1){
 		sem_wait(&mmutex);
+		
 		char f[2];
 		
 		int nread=read(j[0],&f,sizeof(f));
 		
 		 if(nread==2){
-		 	contadorHash++;
+		 contadorHash++;
+		 	
 		 	FILE *fptr=fopen("topico/topico.txt","r+");
 	int contadorval=0;
 	char line[256];
@@ -541,12 +548,15 @@ void *recargarMatriz(void *vargp){
 			char * mensaje=strdup(linea[2]);
 			//printf("h:%d\n",length);
 			
+			
 			if(contadorval<100){
 				m[0][contadorval]=strdup(linea[0]);
 				m[1][contadorval]=strdup(linea[1]);
 				m[2][contadorval]=strdup(linea[2]);
+				m[3][contadorval]=strdup(linea[3]);
 			
 			}
+			
 			//int l =snprintf(NULL,0,"%d",length);
 			//char * valor=malloc(l+1);
 			//snprintf(valor,l+1,"%d",length);
@@ -574,7 +584,7 @@ void *recargarMatriz(void *vargp){
 }
 void atender_cliente2(int connfd,int *j)
 {
-printf("prueba");
+
 	/*
 	char b[2];
 	int t=read(j[0],b,sizeof(b));
@@ -584,6 +594,7 @@ printf("prueba");
 	
 	//int flag=0;
 	n = read(connfd, buf, MAXLINE);
+	
 	FILE *flog=fopen(str2,"a+");
 		if(flog==NULL){
 			printf("ERROR LOG");
@@ -594,7 +605,7 @@ printf("prueba");
 		if(verbose==1){
 			printf("Suscriber connectado, connfd:%d\n",connfd);
 		}
-		printf("prueba");
+		
 		if(n <= 0){
 			return;
 			}
@@ -604,7 +615,7 @@ printf("prueba");
 	int contadorTopico=0;
 	int contadorTopicoHash=0;
 	int indice=-1;
-	
+	buf[strlen(buf)-1]='\0';
 	while(1){
 		if(strcmp(buf, "CHAO\n") == 0){
 			write(connfd, "BYE\n", 4);
@@ -620,6 +631,19 @@ printf("prueba");
 		}
 		sem_wait(&mmutex);
 		if(strcmp(buf,"#")==0){
+				if(contadorTopicoHash<contadorHash){
+					indice=buscarMayor();
+					write(connfd, m[3][indice], strlen(m[3][indiceGlobal]));
+					contadorTopicoHash=contadorHash;
+						FILE *flog=fopen(str2,"a+");
+						if(flog==NULL){
+							printf("ERROR LOG");
+							exit(1);
+						}
+						fprintf(flog,"Mensaje enviado a Suscriber:%s",m[3][indice]);
+						fprintf(flog,"Suscriber desconectado, connfd:%d\n",connfd);
+						fclose(flog);
+				}
 			
 			
 		}
@@ -632,14 +656,15 @@ printf("prueba");
 				int length = atoi(m[0][indice]);
 				if(contadorTopico<length){
 					if(indice!=-1){
-						write(connfd, m[2][indice], strlen(m[2][indice]));
+						write(connfd, m[3][indice], strlen(m[3][indice]));
 					contadorTopico=length;
+						
 						FILE *flog=fopen(str2,"a+");
 						if(flog==NULL){
 							printf("ERROR LOG");
 							exit(1);
 						}
-						fprintf(flog,"Mensaje enviado a Suscriber:%s",m[2][indice]);
+						fprintf(flog,"Mensaje enviado a Suscriber:%s",m[3][indice]);
 						fprintf(flog,"Suscriber desconectado, connfd:%d\n",connfd);
 						fclose(flog);
 					}
@@ -703,9 +728,9 @@ void atender_cliente(int connfd,int * j)
 			return;
 		
 		
-
+		if(verbose){
 		printf("Recibido: %s", buf);
-
+		}
 		//Detecta "CHAO" y se desconecta del cliente
 		if(strcmp(buf, "CHAO\n") == 0){
 			write(connfd, "BYE\n", 4);
@@ -735,23 +760,24 @@ void atender_cliente(int connfd,int * j)
 		int encontro=0;
 		//int r=1;
 		
-		
+		int contador=0;
 		while(fgets(line,sizeof(line),fptr)){
 			
 			char **linea=separar_mensaje(line);
 			
 			int length = atoi(linea[0]);
-			char * topico=strdup(linea[1]);
-			char * mensaje=strdup(linea[2]);
+			int indice = atoi(linea[1]);
+			char * topico=strdup(linea[2]);
+			char * mensaje=strdup(linea[3]);
 			//printf("h:%d\n",length);
 			
-			if(strcmp(linea[1],c[0])==0 ){
+			if(strcmp(linea[2],c[0])==0 ){
 				length=length+1;
 				encontro=1;
-				fprintf(fptr2,"%d %s %s",length,topico,c[1]);
+				fprintf(fptr2,"%d %d %s %s",length,contador,topico,c[1]);
 			}
 			else{
-				fprintf(fptr2,"%d %s %s",length,topico,mensaje);
+				fprintf(fptr2,"%d %d %s %s",length,-1,topico,mensaje);
 			}
 			//int l =snprintf(NULL,0,"%d",length);
 			//char * valor=malloc(l+1);
@@ -762,13 +788,15 @@ void atender_cliente(int connfd,int * j)
 			
 			free(linea);
 			free(topico);
-			//free(mensaje);
+			free(mensaje);
+			
 			//analizar la linea 
 			// arreglar la linea
 			// escribir sobre la linea
+			contador++;
 		}
 		if(encontro==0){
-			fprintf(fptr2,"%d %s %s",1,c[0],c[1]);
+			fprintf(fptr2,"%d %d %s %s",1,contador,c[0],c[1]);
 		} 
 		
 		
@@ -786,10 +814,11 @@ void atender_cliente(int connfd,int * j)
 			//printf("h:%s\n",line);
 			char **linea=separar_mensaje(line);
 			int length = atoi(linea[0]);
-			char * topico=strdup(linea[1]);
-			char * mensaje=strdup(linea[2]);
+			int p = atoi(linea[1]);
+			char * topico=strdup(linea[2]);
+			char * mensaje=strdup(linea[3]);
 			//printf("%s %s %s",linea[0],linea[1],linea[2]);
-			fprintf(fptr,"%d %s %s",length,topico,mensaje);
+			fprintf(fptr,"%d %d %s %s",length,p,topico,mensaje);
 			free(linea);
 			free(topico);
 			free(mensaje);
@@ -801,9 +830,9 @@ void atender_cliente(int connfd,int * j)
 		
 		fclose(fptr);
 		fclose(fptr2);
-		printf("%d%dJEJE\n",j[0],j[1]);
-	char k[2]={'1','\n'};
-	write(j[1],&k,sizeof(k));
+		
+		char k[2]={'1','\n'};
+		write(j[1],&k,sizeof(k));
 	
 		
 		
@@ -827,10 +856,10 @@ void atender_cliente(int connfd,int * j)
 
 char **separar_mensaje(char *buf){
 	char ** topmen;
-		topmen=malloc((3+1)*sizeof(char*));
+		topmen=malloc((4+1)*sizeof(char*));
 	
 		
-		for(int  j=0;j<3;j++){
+		for(int  j=0;j<4;j++){
       		topmen[j] =malloc(500);
 		}
 		
@@ -858,7 +887,7 @@ char **separar_topicos(char *buf){
 
 int revisarTopico(char ***m){
 	
-		printf("Entre revisar topico");
+		
 		/*
 			for(int i=0;i<50;i++){
 			
@@ -884,8 +913,27 @@ int revisarEspacioTopico(char ***m){
 }
 int buscarIndice(char * buf){
 	
+	
+	
+	
 	for(int i=0;i<100;i++){
-		if(strcmp(m[1][i],buf)){
+		
+		if(strcmp(m[2][i],buf)==0){
+			
+			return i;
+		}
+	}
+	return -1;
+}
+int buscarMayor(){
+	
+	
+	
+	
+	for(int i=0;i<100;i++){
+		
+		if(strcmp(m[1][i],"-1")!=0){
+			
 			return i;
 		}
 	}
