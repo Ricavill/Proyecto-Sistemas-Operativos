@@ -1,7 +1,0 @@
-Suscriber connectado, connfd:6
-Suscriber connectado, connfd:7
-Suscriber connectado, connfd:8
-Suscriber connectado, connfd:7
-Suscriber connectado, connfd:9
-Suscriber connectado, connfd:7
-Suscriber connectado, connfd:10
