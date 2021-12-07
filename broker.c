@@ -171,9 +171,16 @@ int sizec=0;
 	
 	
 	
-} 
+}
+struct stat st={0}; 
 int main(int argc, char **argv)
-{
+{	
+	if(stat("log",&st)==-1){
+		mkdir("log",0700);
+	}
+	if(stat("topico",&st)==-1){
+		mkdir("topico",0700);
+	}
 	if(access("topico/topico.txt",F_OK)!=0){
 			
 			FILE *f=fopen("topico/topico.txt","w");
@@ -766,7 +773,7 @@ void atender_cliente(int connfd,int * j)
 			char **linea=separar_mensaje(line);
 			
 			int length = atoi(linea[0]);
-			int indice = atoi(linea[1]);
+			//int indice = atoi(linea[1]);
 			char * topico=strdup(linea[2]);
 			char * mensaje=strdup(linea[3]);
 			//printf("h:%d\n",length);
